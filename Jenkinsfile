@@ -7,7 +7,7 @@ pipeline {
   }
 
   environment {
-    REPO_URL = 'https://github.com/KateV2024/assessment.git'
+    REPO_URL = 'https://github.com/KateV2024/task.git'
     BRANCH = 'main' // change if your default branch differs
     VENV_DIR = '.venv'
     PYTHON = "${env.WORKSPACE}/${VENV_DIR}/bin/python"
@@ -35,7 +35,7 @@ pipeline {
         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
           sh """
             set -e
-            python3 -m venv ${VENV_DIR}
+            python -m venv ${VENV_DIR}
             ${PIP} install --upgrade pip
             if [ -f requirements.txt ]; then
               ${PIP} install -r requirements.txt
