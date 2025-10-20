@@ -11,15 +11,12 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
-environment {
-    VENV_DIR = '.venv'
-    PYTHON_BIN_PATH = '/usr/bin/python3' // <--- Add this
-    PYTHON = "${env.WORKSPACE}/${VENV_DIR}/bin/python3"
-    PIP = "${env.WORKSPACE}/${VENV_DIR}/bin/pip"
+  environment {
+    // VENV_DIR, PYTHON, PIP are not strictly needed here as we use system python inside the container
     ALLURE_RESULTS_DIR = 'allure-results'
     ALLURE_REPORT_DIR = 'allure-report'
     ALLURE_DOCKER_IMAGE = 'frankescobar/allure-docker-service-cli:latest'
-}
+  }
 
   stages {
     stage('Checkout') {
