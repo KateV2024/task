@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'mcr.microsoft.com/playwright/python:v1.44.0-jammy' // An image with Python and Playwright pre-installed
-      args '-u 0:0' // Run as root inside the container to avoid permission issues
-    }
-  }
+  agent any // Runs on any available Jenkins agent
 
   options {
     timestamps()
