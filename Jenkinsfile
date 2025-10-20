@@ -1,19 +1,25 @@
 pipeline {
-  agent any // Runs on any available Jenkins agent
+  agent {
+    docker {
+      image 'mcr.microsoft.com/playwright/python:v1.44.0-jammy' // An image with Python and Playwright pre-installed
+      args '-u 0:0' // Run as root inside the container to avoid permission issues
+    }
+  }
 
   options {
     timestamps()
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
-  environment {
+environment {
     VENV_DIR = '.venv'
+    PYTHON_BIN_PATH = '/usr/bin/python3' // <--- Add this
     PYTHON = "${env.WORKSPACE}/${VENV_DIR}/bin/python3"
     PIP = "${env.WORKSPACE}/${VENV_DIR}/bin/pip"
     ALLURE_RESULTS_DIR = 'allure-results'
     ALLURE_REPORT_DIR = 'allure-report'
     ALLURE_DOCKER_IMAGE = 'frankescobar/allure-docker-service-cli:latest'
-  }
+}
 
   stages {
     stage('Checkout') {
@@ -22,46 +28,31 @@ pipeline {
       }
     }
 
-    stage('Setup Python Environment') {
+    stage('Install Dependencies') {
       steps {
         sh """
           set -e
-          # Create virtual environment
-          python3 -m venv ${VENV_DIR}
-          # Upgrade pip
-          ${PIP} install --upgrade pip
-          # Install project requirements
+          # Python and Playwright browsers are pre-installed in the Docker image
           if [ -f requirements.txt ]; then
-            ${PIP} install -r requirements.txt
+            pip install -r requirements.txt
           elif [ -f automation_framework/requirements.txt ]; then
-            ${PIP} install -r automation_framework/requirements.txt
+            pip install -r automation_framework/requirements.txt
           else
-            echo "ERROR: No requirements.txt found. Please create one."
-            exit 1
+            echo "INFO: No requirements.txt found, skipping pip install."
           fi
         """
       }
     }
 
-    stage('Install Playwright Browsers') {
-      steps {
-        sh """
-          set -e
-          # Install Playwright browsers (e.g., Chromium)
-          ${PYTHON} -m playwright install --with-deps chromium
-        """
-      }
-    }
+    // No dedicated 'Install Playwright Browsers' stage needed, as they are in the Docker image
 
     stage('Run All Tests') {
       steps {
         sh """
           set -e
-          # Clean up previous results and create directory for new ones
           rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
           mkdir -p ${ALLURE_RESULTS_DIR}
-          # Execute pytest
-          ${PYTHON} -m pytest tests \\
+          pytest tests \\
             --alluredir=${ALLURE_RESULTS_DIR} \\
             --junitxml=junit-tests.xml \\
             -v
@@ -72,7 +63,6 @@ pipeline {
     stage('Generate Allure Report') {
       steps {
         script {
-          // Check if Docker is available
           def docker_available = sh(script: 'docker info > /dev/null 2>&1 || { echo "Docker not found"; exit 1; }', returnStatus: true) == 0
           if (!docker_available) {
             error 'Docker is required for Allure report generation but is not available on this agent.'
