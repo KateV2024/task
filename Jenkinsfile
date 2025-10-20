@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'python:3.14-slim'
-      args '-u root:root -v /var/run/docker.sock:/var/run/docker.sock'
-    }
-  }
+  agent any // Runs on any available Jenkins agent
 
   options {
     timestamps()
@@ -13,7 +8,7 @@ pipeline {
 
   environment {
     VENV_DIR = '.venv'
-    PYTHON = "${env.WORKSPACE}/${VENV_DIR}/bin/python"
+    PYTHON = "${env.WORKSPACE}/${VENV_DIR}/bin/python3"
     PIP = "${env.WORKSPACE}/${VENV_DIR}/bin/pip"
     ALLURE_RESULTS_DIR = 'allure-results'
     ALLURE_REPORT_DIR = 'allure-report'
@@ -27,18 +22,21 @@ pipeline {
       }
     }
 
-    stage('Setup Python') {
+    stage('Setup Python Environment') {
       steps {
         sh """
           set -e
+          # Create virtual environment
           python3 -m venv ${VENV_DIR}
+          # Upgrade pip
           ${PIP} install --upgrade pip
+          # Install project requirements
           if [ -f requirements.txt ]; then
             ${PIP} install -r requirements.txt
           elif [ -f automation_framework/requirements.txt ]; then
             ${PIP} install -r automation_framework/requirements.txt
           else
-            echo "WARNING: No requirements.txt found"
+            echo "ERROR: No requirements.txt found. Please create one."
             exit 1
           fi
         """
@@ -49,7 +47,7 @@ pipeline {
       steps {
         sh """
           set -e
-          apt-get update && apt-get install -y wget gnupg
+          # Install Playwright browsers (e.g., Chromium)
           ${PYTHON} -m playwright install --with-deps chromium
         """
       }
@@ -59,8 +57,10 @@ pipeline {
       steps {
         sh """
           set -e
+          # Clean up previous results and create directory for new ones
           rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
           mkdir -p ${ALLURE_RESULTS_DIR}
+          # Execute pytest
           ${PYTHON} -m pytest tests \\
             --alluredir=${ALLURE_RESULTS_DIR} \\
             --junitxml=junit-tests.xml \\
@@ -71,16 +71,23 @@ pipeline {
 
     stage('Generate Allure Report') {
       steps {
-        sh """
-          set -e
-          apt-get update && apt-get install -y docker.io || true
-          rm -rf ${ALLURE_REPORT_DIR} || true
-          docker run --rm \\
-            -v "\${WORKSPACE}/${ALLURE_RESULTS_DIR}:/app/allure-results" \\
-            -v "\${WORKSPACE}/${ALLURE_REPORT_DIR}:/app/allure-report" \\
-            -e CHECK_RESULTS_EVERY_SECONDS=0 \\
-            ${ALLURE_DOCKER_IMAGE} generate
-        """
+        script {
+          // Check if Docker is available
+          def docker_available = sh(script: 'docker info > /dev/null 2>&1 || { echo "Docker not found"; exit 1; }', returnStatus: true) == 0
+          if (!docker_available) {
+            error 'Docker is required for Allure report generation but is not available on this agent.'
+          }
+
+          sh """
+            set -e
+            rm -rf ${ALLURE_REPORT_DIR} || true
+            docker run --rm \\
+              -v "\$(pwd)/${ALLURE_RESULTS_DIR}:/app/allure-results" \\
+              -v "\$(pwd)/${ALLURE_REPORT_DIR}:/app/allure-report" \\
+              -e CHECK_RESULTS_EVERY_SECONDS=0 \\
+              ${ALLURE_DOCKER_IMAGE} generate
+          """
+        }
       }
     }
 
