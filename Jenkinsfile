@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker/compose:1.29.2'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         ALLURE_RESULTS_DIR = 'allure-results'
@@ -26,7 +31,6 @@ pipeline {
             steps {
                 echo '🧹 Cleaning previous results...'
                 sh '''
-                    # Stop existing services
                     docker-compose down || true
                     rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
                 '''
@@ -37,14 +41,11 @@ pipeline {
             steps {
                 echo '🚀 Starting application services...'
                 sh '''
-                    # Start services with docker-compose
                     docker-compose up -d
 
-                    # Wait for services to be ready
                     echo "⏳ Waiting for services to start..."
                     sleep 20
 
-                    # Verify services are running
                     docker-compose ps
 
                     # Test connectivity
