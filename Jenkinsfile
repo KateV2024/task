@@ -49,6 +49,7 @@ pipeline {
               set -e
               rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
               mkdir -p ${ALLURE_RESULTS_DIR}
+              export PYTHONPATH=\${PYTHONPATH}:\$(pwd)
               pytest tests \\
                 --alluredir=${ALLURE_RESULTS_DIR} \\
                 --junitxml=junit-tests.xml \\
