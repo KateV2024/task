@@ -10,7 +10,6 @@ pipeline {
     ALLURE_RESULTS_DIR = 'allure-results'
     ALLURE_REPORT_DIR = 'allure-report'
     ALLURE_DOCKER_IMAGE = 'frankescobar/allure-docker-service-cli:latest'
-    HEADLESS = 'true'
   }
 
   stages {
@@ -27,20 +26,24 @@ pipeline {
         script {
           sh '''
             set -e
-            # Clean up any existing containers
+            # Clean up any existing containers and network
             docker stop mongo backend frontend || true
             docker rm mongo backend frontend || true
+            docker network rm test-network || true
+
+            # Create network
+            docker network create test-network
 
             # Start MongoDB
-            docker run -d --name mongo -p 27017:27017 mongo:6.0
+            docker run -d --name mongo --network test-network -p 27017:27017 mongo:6.0
 
             # Start Backend
             docker build -t backend ./backend
-            docker run -d --name backend -p 5000:5000 --link mongo:mongo backend
+            docker run -d --name backend --network test-network -p 5000:5000 backend
 
             # Start Frontend
             docker build -t frontend ./frontend
-            docker run -d --name frontend -p 3000:3000 --link backend:backend frontend
+            docker run -d --name frontend --network test-network -p 3000:3000 frontend
           '''
         }
       }
@@ -52,21 +55,40 @@ pipeline {
         sh '''
           set -e
           echo "Waiting for MongoDB to start..."
-          until docker exec mongo mongosh --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+          timeout=60
+          counter=0
+          until docker exec mongo mongosh --eval "db.adminCommand('ping')" > /dev/null 2>&1 || [ $counter -ge $timeout ]; do
             sleep 2
+            counter=$((counter + 2))
           done
+          if [ $counter -ge $timeout ]; then
+            echo "MongoDB failed to start within $timeout seconds"
+            exit 1
+          fi
           echo "MongoDB is up!"
 
           echo "Waiting for backend to start..."
-          until curl -s http://localhost:5000/ > /dev/null 2>&1; do
+          counter=0
+          until curl -s http://localhost:5000/ > /dev/null 2>&1 || [ $counter -ge $timeout ]; do
             sleep 2
+            counter=$((counter + 2))
           done
+          if [ $counter -ge $timeout ]; then
+            echo "Backend failed to start within $timeout seconds"
+            exit 1
+          fi
           echo "Backend is up!"
 
           echo "Waiting for frontend to start..."
-          until curl -s http://localhost:3000/ > /dev/null 2>&1; do
+          counter=0
+          until curl -s http://localhost:3000/ > /dev/null 2>&1 || [ $counter -ge $timeout ]; do
             sleep 2
+            counter=$((counter + 2))
           done
+          if [ $counter -ge $timeout ]; then
+            echo "Frontend failed to start within $timeout seconds"
+            exit 1
+          fi
           echo "Frontend is up!"
         '''
       }
@@ -148,10 +170,10 @@ pipeline {
   post {
     always {
       node('any') {
-        // Stop and remove containers
         sh '''
           docker stop frontend backend mongo || true
           docker rm frontend backend mongo || true
+          docker network rm test-network || true
         '''
       }
     }
