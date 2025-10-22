@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -17,6 +18,31 @@ pipeline {
             steps {
                 echo '📦 Cloning repository...'
                 checkout scm
+            }
+        }
+
+        stage('Install Python') {
+            steps {
+                echo '🐍 Installing Python...'
+                sh '''
+                    # For Ubuntu/Debian
+                    if command -v apt-get &> /dev/null; then
+                        apt-get update
+                        apt-get install -y python3 python3-pip python3-venv
+                    # For CentOS/RHEL
+                    elif command -v yum &> /dev/null; then
+                        yum install -y python3 python3-pip
+                    # For Alpine
+                    elif command -v apk &> /dev/null; then
+                        apk add python3 py3-pip
+                    else
+                        echo "Unsupported OS"
+                        exit 1
+                    fi
+
+                    python3 --version
+                    pip3 --version
+                '''
             }
         }
 
