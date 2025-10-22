@@ -4,8 +4,8 @@ from pymongo import MongoClient
 from playwright.sync_api import sync_playwright
 
 
-BASE_URL = "http://localhost:3000"
-BACKEND_URL = "http://localhost:5000/api/records"
+BASE_URL = os.getenv("BASE_URL", "http://localhost:3000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000/api/records")
 MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
 MONGODB_URL = f"mongodb://{MONGO_HOST}:27017/myapp"
 DATABASE_NAME = "myapp"

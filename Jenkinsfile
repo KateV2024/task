@@ -1,10 +1,12 @@
-
 pipeline {
     agent any
 
     environment {
         ALLURE_RESULTS_DIR = 'allure-results'
         ALLURE_REPORT_DIR = 'allure-report'
+        FRONTEND_URL = 'http://host.docker.internal:3000'
+        API_BASE_URL = 'http://host.docker.internal:5000'
+        MONGO_URL = 'mongodb://host.docker.internal:27017'
     }
 
     options {
@@ -13,7 +15,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo '📦 Cloning repository...'
@@ -21,62 +22,70 @@ pipeline {
             }
         }
 
-        stage('Install Python') {
-            steps {
-                echo '🐍 Installing Python...'
-                sh '''
-                    # For Ubuntu/Debian
-                    if command -v apt-get &> /dev/null; then
-                        apt-get update
-                        apt-get install -y python3 python3-pip python3-venv
-                    # For CentOS/RHEL
-                    elif command -v yum &> /dev/null; then
-                        yum install -y python3 python3-pip
-                    # For Alpine
-                    elif command -v apk &> /dev/null; then
-                        apk add python3 py3-pip
-                    else
-                        echo "Unsupported OS"
-                        exit 1
-                    fi
-
-                    python3 --version
-                    pip3 --version
-                '''
-            }
-        }
-
         stage('Cleanup') {
             steps {
-                echo '🧹 Cleaning up previous runs...'
+                echo '🧹 Cleaning previous results...'
                 sh '''
-                    rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml venv || true
+                    # Stop existing services
+                    docker-compose down || true
+                    rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
                 '''
             }
         }
 
-        stage('Setup Environment') {
+        stage('Start Services') {
             steps {
-                echo '⚙️ Setting up Python environment...'
+                echo '🚀 Starting application services...'
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    playwright install
+                    # Start services with docker-compose
+                    docker-compose up -d
+
+                    # Wait for services to be ready
+                    echo "⏳ Waiting for services to start..."
+                    sleep 20
+
+                    # Verify services are running
+                    docker-compose ps
+
+                    # Test connectivity
+                    timeout 60 bash -c 'until curl -f http://localhost:3000 > /dev/null 2>&1; do sleep 2; done' || echo "Frontend not ready"
+                    timeout 60 bash -c 'until curl -f http://localhost:5000 > /dev/null 2>&1; do sleep 2; done' || echo "Backend not ready"
                 '''
             }
         }
 
-        stage('Run Python Tests') {
+        stage('Run Tests') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright/python:v1.47.0-jammy'
+                    args '-u root:root --add-host=host.docker.internal:host-gateway'
+                    reuseNode true
+                }
+            }
             steps {
                 echo '🧪 Running Playwright + Pytest tests...'
                 sh '''
                     set -e
-                    . venv/bin/activate
+
+                    echo "📥 Installing Python dependencies..."
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+
+                    echo "🎭 Installing Playwright browsers..."
+                    playwright install
 
                     mkdir -p ${ALLURE_RESULTS_DIR}
                     export PYTHONPATH=${WORKSPACE}
+
+                    # Set environment variables for tests
+                    export BASE_URL=${FRONTEND_URL}
+                    export BACKEND_URL=${API_BASE_URL}/api/records
+                    export MONGO_HOST=host.docker.internal
+
+                    echo "🧪 Running tests..."
+                    echo "Frontend URL: ${BASE_URL}"
+                    echo "Backend URL: ${BACKEND_URL}"
+                    echo "MongoDB Host: ${MONGO_HOST}"
 
                     pytest tests \
                         --alluredir=${ALLURE_RESULTS_DIR} \
@@ -87,7 +96,13 @@ pipeline {
             }
             post {
                 always {
-                    echo '🧾 Test execution completed'
+                    echo '✅ Test execution completed.'
+                }
+                failure {
+                    sh '''
+                        echo "📋 Service logs on failure:"
+                        docker-compose logs --tail=50 || true
+                    '''
                 }
             }
         }
@@ -103,7 +118,7 @@ pipeline {
                             frankescobar/allure-docker-service:2.29.0 \
                             allure generate /app/allure-results -o /app/allure-report --clean || true
                     else
-                        echo "No allure results found, skipping report generation"
+                        echo "⚠️ No allure results found, skipping report generation."
                     fi
                 '''
             }
@@ -125,15 +140,18 @@ pipeline {
                                  allowEmptyArchive: true
             }
         }
-
     }
 
     post {
+        always {
+            echo '🧹 Stopping services...'
+            sh 'docker-compose down || true'
+        }
         success {
-            echo '✅ Tests passed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo '❌ Tests failed! Check logs above for details.'
+            echo '❌ Pipeline failed! Check logs above for details.'
         }
         cleanup {
             cleanWs()
