@@ -10,6 +10,7 @@ pipeline {
     ALLURE_RESULTS_DIR = 'allure-results'
     ALLURE_REPORT_DIR = 'allure-report'
     ALLURE_DOCKER_IMAGE = 'frankescobar/allure-docker-service-cli:latest'
+    HEADLESS = 'true'
   }
 
   stages {
