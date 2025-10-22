@@ -25,7 +25,7 @@ pipeline {
             steps {
                 echo '🧹 Cleaning up previous runs...'
                 sh '''
-                    docker-compose down -v || true
+                    docker compose down -v || true
                     rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
                 '''
             }
@@ -34,7 +34,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 echo '🔨 Building Docker images...'
-                sh 'docker-compose build'
+                sh 'docker compose build'
             }
         }
 
@@ -42,7 +42,7 @@ pipeline {
             steps {
                 echo '🚀 Starting MongoDB and Backend...'
                 sh '''
-                    docker-compose up -d mongo backend
+                    docker compose up -d mongo backend
                     echo "Waiting for services to be ready..."
                     sleep 15
                 '''
@@ -59,7 +59,7 @@ pipeline {
                     mkdir -p ${ALLURE_RESULTS_DIR}
 
                     # Run pytest with allure reporting
-                    docker-compose exec -T backend \
+                    docker compose exec -T backend \
                         pytest tests \
                             --alluredir=${ALLURE_RESULTS_DIR} \
                             --junitxml=junit-tests.xml \
@@ -68,8 +68,8 @@ pipeline {
                             || EXIT_CODE=$?
 
                     # Copy reports from container to host
-                    docker-compose cp backend:/app/${ALLURE_RESULTS_DIR} . || true
-                    docker-compose cp backend:/app/junit-tests.xml . || true
+                    docker compose cp backend:/app/${ALLURE_RESULTS_DIR} . || true
+                    docker compose cp backend:/app/junit-tests.xml . || true
 
                     if [ ! -z "$EXIT_CODE" ]; then
                         exit $EXIT_CODE
@@ -80,8 +80,8 @@ pipeline {
                 always {
                     echo '🧾 Collecting logs...'
                     sh '''
-                        docker-compose logs backend > backend-test.log || true
-                        docker-compose logs mongo > mongo-test.log || true
+                        docker compose logs backend > backend-test.log || true
+                        docker compose logs mongo > mongo-test.log || true
                     '''
                     archiveArtifacts artifacts: '*-test.log', followSymlinks: false, allowEmptyArchive: true
                 }
@@ -128,7 +128,7 @@ pipeline {
         always {
             echo '🧹 Cleaning up containers...'
             sh '''
-                docker-compose down -v || true
+                docker compose down -v || true
             '''
         }
         success {
