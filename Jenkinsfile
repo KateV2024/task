@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_PROJECT_NAME = "myapp"
         ALLURE_RESULTS_DIR = 'allure-results'
         ALLURE_REPORT_DIR = 'allure-report'
     }
@@ -25,26 +24,20 @@ pipeline {
             steps {
                 echo '🧹 Cleaning up previous runs...'
                 sh '''
-                    docker compose down -v || true
-                    rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml || true
+                    rm -rf ${ALLURE_RESULTS_DIR} ${ALLURE_REPORT_DIR} junit-*.xml venv || true
                 '''
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Setup Environment') {
             steps {
-                echo '🔨 Building Docker images...'
-                sh 'docker compose build'
-            }
-        }
-
-        stage('Start Services') {
-            steps {
-                echo '🚀 Starting MongoDB and Backend...'
+                echo '⚙️ Setting up Python environment...'
                 sh '''
-                    docker compose up -d mongo backend
-                    echo "Waiting for services to be ready..."
-                    sleep 15
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    playwright install
                 '''
             }
         }
@@ -54,36 +47,21 @@ pipeline {
                 echo '🧪 Running Playwright + Pytest tests...'
                 sh '''
                     set -e
+                    . venv/bin/activate
 
-                    # Create allure results directory
                     mkdir -p ${ALLURE_RESULTS_DIR}
+                    export PYTHONPATH=${WORKSPACE}
 
-                    # Run pytest with allure reporting
-                    docker compose exec -T backend \
-                        pytest tests \
-                            --alluredir=${ALLURE_RESULTS_DIR} \
-                            --junitxml=junit-tests.xml \
-                            -v \
-                            --tb=short \
-                            || EXIT_CODE=$?
-
-                    # Copy reports from container to host
-                    docker compose cp backend:/app/${ALLURE_RESULTS_DIR} . || true
-                    docker compose cp backend:/app/junit-tests.xml . || true
-
-                    if [ ! -z "$EXIT_CODE" ]; then
-                        exit $EXIT_CODE
-                    fi
+                    pytest tests \
+                        --alluredir=${ALLURE_RESULTS_DIR} \
+                        --junitxml=junit-tests.xml \
+                        -v \
+                        --tb=short
                 '''
             }
             post {
                 always {
-                    echo '🧾 Collecting logs...'
-                    sh '''
-                        docker compose logs backend > backend-test.log || true
-                        docker compose logs mongo > mongo-test.log || true
-                    '''
-                    archiveArtifacts artifacts: '*-test.log', followSymlinks: false, allowEmptyArchive: true
+                    echo '🧾 Test execution completed'
                 }
             }
         }
@@ -125,12 +103,6 @@ pipeline {
     }
 
     post {
-        always {
-            echo '🧹 Cleaning up containers...'
-            sh '''
-                docker compose down -v || true
-            '''
-        }
         success {
             echo '✅ Tests passed successfully!'
         }
