@@ -1,30 +1,31 @@
+version: "3.9"
+
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    stdin_open: true
-    tty: true
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    environment:
-      - MONGO_URL=mongodb://mongo:27017/myapp
-    depends_on:
-      - mongo
-
   mongo:
-    image: mongo
+    image: mongo:7
+    container_name: mongo
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+
+  tests:
+    build: .
+    container_name: tests
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ./allure-results:/app/allure-results
+    environment:
+      PYTHONPATH: /app
+      BASE_URL: http://host.docker.internal:3000
+      BACKEND_URL: http://host.docker.internal:5000/api/records
+      MONGO_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mongo
+    command: ["pytest", "--alluredir=allure-results", "-v"]
 
 volumes:
   mongo-data:

@@ -24,6 +24,16 @@ class RecordsPage(BasePage):
         return self.get_by_role(self.NEW_RECORD_BUTTON, name = self.NEW_RECORD_TEXT)
 
     def click_add_new_record(self):
+        self.page.wait_for_timeout(1000)
+
+        # Wait for overlay (if it exists) and remove it
+        self.page.evaluate("""
+            const overlay = document.getElementById('webpack-dev-server-client-overlay');
+            if (overlay) {
+                console.log('Overlay detected, removing it...');
+                overlay.remove();
+            }
+        """)
         self.check_new_record_btn().click()
 
     def go_to_new_record_title(self):
@@ -41,6 +51,8 @@ class RecordsPage(BasePage):
     def click_save_record(self):
         self.get_by_role(self.SAVE_BUTTON, name=self.SAVE_TEXT).click()
 
+
+
     def _row_by_exact_text(self, text):
         table = self.page.get_by_role("table")
         cell = table.get_by_role("cell", name=text, exact=True).first
@@ -56,6 +68,7 @@ class RecordsPage(BasePage):
         row = self._row_by_exact_text(description)
         expect(row).to_be_visible(timeout=10000)
         return True
+
 
     def click_delete_record(self, title):
         row = self._row_by_exact_text(title)

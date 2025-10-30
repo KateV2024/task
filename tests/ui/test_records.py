@@ -36,6 +36,7 @@ def test_user_deletes_new_record(browser_context, base_url, locale):
     with allure.step("Verify new record is added"):
         record.check_new_title_in_table(new_title)
         record.check_new_desc_in_table(new_description)
+        # record.check_title_with_filter(new_title)
 
     with allure.step("Delete the newly added record"):
         record.click_delete_record(new_title)

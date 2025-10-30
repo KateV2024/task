@@ -22,7 +22,10 @@ def browser_context():
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
-
+        page.evaluate("""
+                const overlay = document.getElementById('webpack-dev-server-client-overlay');
+                if (overlay) overlay.remove();
+            """)
         yield page
         context.close()
         browser.close()
