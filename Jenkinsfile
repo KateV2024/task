@@ -40,8 +40,9 @@ pipeline {
                 set PYTHONPATH=%CD%
                 pytest tests/ --alluredir=reports
                 if %errorlevel% neq 0 (
-                echo "Some tests failed, but continuing pipeline..."
-                exit /b 0
+                    echo Some tests failed, but continuing pipeline...
+                    exit /b 0
+                )
                 '''
             }
         }
