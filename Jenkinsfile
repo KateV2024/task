@@ -37,6 +37,7 @@ pipeline {
             steps {
                 bat '''
                 call %VENV_DIR%\\Scripts\\activate
+                set PYTHONPATH=%CD%
                 pytest tests/ --alluredir=reports
                 '''
             }
