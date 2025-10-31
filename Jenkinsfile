@@ -48,9 +48,6 @@ pipeline {
         }
 
         stage('Generate Allure Report') {
-            when {
-                always()
-            }
             steps {
                 allure([
                     includeProperties: false,
