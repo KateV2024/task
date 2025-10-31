@@ -48,12 +48,15 @@ pipeline {
         }
 
         stage('Generate Allure Report') {
+            when {
+                always()
+            }
             steps {
-                // If using Allure Jenkins plugin:
                 allure([
                     includeProperties: false,
                     jdk: '',
-                    results: [[path: 'reports']]
+                    results: [[path: 'reports']],
+                    commandline: 'allure'
                 ])
             }
         }
