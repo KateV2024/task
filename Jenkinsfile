@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        VENV_DIR = "${WORKSPACE}/venv"
-        PATH = "${VENV_DIR}/bin:${env.PATH}"
+        VENV_DIR = "${WORKSPACE}\\venv"
+        PATH = "${VENV_DIR}\\Scripts;${env.PATH}"
     }
 
     stages {
@@ -15,9 +15,9 @@ pipeline {
 
         stage('Install dependencies') {
             steps {
-                sh '''
-                python3 -m venv $VENV_DIR
-                source $VENV_DIR/bin/activate
+                bat '''
+                python -m venv %VENV_DIR%
+                call %VENV_DIR%\\Scripts\\activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
                 '''
@@ -26,8 +26,8 @@ pipeline {
 
         stage('Install Playwright browsers') {
             steps {
-                sh '''
-                source $VENV_DIR/bin/activate
+                bat '''
+                call %VENV_DIR%\\Scripts\\activate
                 python -m playwright install chromium
                 '''
             }
@@ -35,8 +35,8 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh '''
-                source $VENV_DIR/bin/activate
+                bat '''
+                call %VENV_DIR%\\Scripts\\activate
                 pytest tests/ --alluredir=reports
                 '''
             }
@@ -44,7 +44,8 @@ pipeline {
 
         stage('Generate Allure Report') {
             steps {
-                    allure([
+                // If using Allure Jenkins plugin:
+                allure([
                     includeProperties: false,
                     jdk: '',
                     results: [[path: 'reports']]
@@ -56,7 +57,6 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
-            junit 'reports/**/*.xml'
         }
         failure {
             echo '❌ Tests failed!'
