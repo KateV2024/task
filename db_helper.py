@@ -19,7 +19,7 @@ class DatabaseHelper:
 
         return self.collection.find_one({"_id": record_id})
 
-    def verify_record_exists(self, record_id):
+    def return_record_details(self, record_id):
         db_record = self.find_record_by_id(record_id)
         return db_record
 
@@ -31,3 +31,7 @@ class DatabaseHelper:
                 return False
         result = self.collection.delete_one({"_id": record_id})
         return result.deleted_count > 0
+
+    def check_record_is_deleted(self, record_id):
+        db_record = self.find_record_by_id(record_id)
+        return db_record is None

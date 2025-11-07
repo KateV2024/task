@@ -12,23 +12,19 @@ DATABASE_NAME = "myapp"
 COLLECTION_NAME = "My_records"
 
 
-@pytest.fixture(params=["en", "ru"], scope="function")
-def locale(request):
-    return request.param
-
 @pytest.fixture(scope="function")
 def browser_context():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
-        page.evaluate("""
-                const overlay = document.getElementById('webpack-dev-server-client-overlay');
-                if (overlay) overlay.remove();
-            """)
         yield page
         context.close()
         browser.close()
+
+@pytest.fixture(params=["en", "ru"], scope="function")
+def locale(request):
+    return request.param
 
 
 @pytest.fixture(scope="session")
@@ -51,6 +47,10 @@ def db_connection():
     db = client[DATABASE_NAME]
     yield db
     client.close()
+
+@pytest.fixture(scope="session")
+def db_collection_name():
+    return COLLECTION_NAME
 
 @pytest.fixture(scope='function')
 def db_collection(db_connection):
