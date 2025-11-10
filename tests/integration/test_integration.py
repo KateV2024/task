@@ -4,9 +4,7 @@ from conftest import COLLECTION_NAME
 from payload import valid_payload
 from db_helper import DatabaseHelper
 from endpoints.records_endpoints import Record
-from settings import Timeout
 import allure
-import pytest
 import requests
 
 
@@ -27,7 +25,8 @@ def test_full_record_cycle(browser_context, base_url, db_connection, backend_url
 
     with allure.step("Create a new record via API"):
         new_record = Record()
-        record_id = new_record.create_record(valid_payload, session, backend_url)  # Create a record via API
+        new_record.create_record(valid_payload, session, backend_url)  # Create a record via API
+        record_id = new_record.get_record_id()
         new_record.check_status_code(201), "New record is created"
         allure.attach(
             str(valid_payload),
@@ -56,7 +55,7 @@ def test_full_record_cycle(browser_context, base_url, db_connection, backend_url
         record.click_delete_record(our_desc)
         record.check_record_is_deleted(our_title)
         allure.attach(
-            "Record is deleted from DB",
+            str(valid_payload),
             name="Record is deleted",
             attachment_type=allure.attachment_type.TEXT
         )

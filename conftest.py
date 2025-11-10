@@ -1,6 +1,7 @@
 import pytest
 import os
 from pymongo import MongoClient
+from db_helper import DatabaseHelper
 from playwright.sync_api import sync_playwright
 
 
@@ -48,10 +49,10 @@ def db_connection():
     yield db
     client.close()
 
-@pytest.fixture(scope="session")
-def db_collection_name():
-    return COLLECTION_NAME
-
 @pytest.fixture(scope='function')
 def db_collection(db_connection):
     return db_connection[COLLECTION_NAME]
+
+@pytest.fixture(scope='function')
+def db_helper(db_connection, backend_url):
+     return DatabaseHelper(db_connection, COLLECTION_NAME, backend_url)

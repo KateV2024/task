@@ -17,7 +17,7 @@ class Record():
 
         self.response = session.post(backend_url, json=payload)
         self.response_json = self.response.json()
-        return self.get_record_id()
+        return self
 
     def get_records(self, session, backend_url):
         self.response = session.get(backend_url)

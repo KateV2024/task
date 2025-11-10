@@ -19,10 +19,6 @@ class DatabaseHelper:
 
         return self.collection.find_one({"_id": record_id})
 
-    def return_record_details(self, record_id):
-        db_record = self.find_record_by_id(record_id)
-        return db_record
-
     def delete_record(self, record_id):
         if isinstance(record_id, str):
             try:
