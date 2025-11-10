@@ -1,6 +1,6 @@
 import pytest
 import allure
-from tests.api.base_record_test import BaseApiTest
+from tests.api.base_session import BaseApiTest
 
 
 @allure.epic("Records")
@@ -25,8 +25,4 @@ class TestRecordsNegative(BaseApiTest):
 
         with allure.step("Attempt to create record with payload"):
             self.record.create_record(payload, self.session, self.backend_url)
-
-        with allure.step("Verify response status code is 400"):
-            self.record.check_status_code(400), "Failed to create record"
-
-        # assert self.response.status_code == 400, "Failed to create record"
+            self.record.check_status_code(400)
