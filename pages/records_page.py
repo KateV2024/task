@@ -1,76 +1,65 @@
 from pages.base_page import BasePage
 from playwright.sync_api import expect
+from pages.locators.locators_records_page import RecordsPageConstants as r_const
+from settings import Timeout
 
 
 class RecordsPage(BasePage):
-    RECORDS_LIST_HEADING = "heading"
-    RECORDS_LIST_TEXT = "Record List"
-    NEW_RECORD_BUTTON = "button"
-    NEW_RECORD_TEXT = "Add Record"
-    NEW_TITLE_FIELD = "textbox"
-    NEW_TITLE_INPUT = "Title"
-    NEW_DESC_FIELD = "textbox"
-    NEW_DESC_INPUT = "Description"
-    SAVE_BUTTON = "button"
-    SAVE_TEXT = "Save"
-    DELETE_BUTTON = "button"
-    DELETE_TEXT = "Delete"
-
-
-    def check_user_is_on_records_list(self):
-        expect(self.page.get_by_role(self.RECORDS_LIST_HEADING, name = self.RECORDS_LIST_TEXT)).to_be_visible()
 
     def check_new_record_btn(self):
-        return self.get_by_role(self.NEW_RECORD_BUTTON, name = self.NEW_RECORD_TEXT)
+        new_record_btn = self.get_by_role(r_const.NEW_RECORD_BUTTON, name = r_const.NEW_RECORD_TEXT)
+        new_record_btn.wait_for(state="visible", timeout=Timeout.Medium)
+        return new_record_btn
 
     def click_add_new_record(self):
-        self.page.wait_for_timeout(1000)
-
-        # Wait for overlay (if it exists) and remove it
-        self.page.evaluate("""
-            const overlay = document.getElementById('webpack-dev-server-client-overlay');
-            if (overlay) {
-                console.log('Overlay detected, removing it...');
-                overlay.remove();
-            }
-        """)
+        self.page.wait_for_timeout(Timeout.Medium)
         self.check_new_record_btn().click()
 
-    def go_to_new_record_title(self):
-        self.get_by_role(self.NEW_TITLE_FIELD, name = self.NEW_TITLE_INPUT).click()
+    def click_new_record_title_field(self):
+        self.get_by_role(r_const.NEW_TITLE_FIELD, name = r_const.NEW_TITLE_INPUT).click()
 
     def enter_new_record_title(self, title):
-        return self.get_by_role(self.NEW_TITLE_FIELD, name = self.NEW_TITLE_INPUT).fill(title)
+        return self.get_by_role(r_const.NEW_TITLE_FIELD, name = r_const.NEW_TITLE_INPUT).fill(title)
 
-    def go_to_new_record_description(self):
-        self.get_by_role(self.NEW_DESC_FIELD, name=self.NEW_DESC_INPUT).click()
+    def click_new_record_description_field(self):
+        self.get_by_role(r_const.NEW_DESC_FIELD, name=r_const.NEW_DESC_INPUT).click()
 
     def enter_new_record_description(self, description):
-        return self.get_by_role(self.NEW_DESC_FIELD, name=self.NEW_DESC_INPUT).fill(description)
+        return self.get_by_role(r_const.NEW_DESC_FIELD, name=r_const.NEW_DESC_INPUT).fill(description)
 
     def click_save_record(self):
-        self.get_by_role(self.SAVE_BUTTON, name=self.SAVE_TEXT).click()
+        self.get_by_role(r_const.SAVE_BUTTON, name=r_const.SAVE_TEXT).click()
 
-
-
-    def _row_by_exact_text(self, text):
-        table = self.page.get_by_role("table")
-        cell = table.get_by_role("cell", name=text, exact=True).first
-        row = cell.locator("xpath=ancestor::tr[1]")
-        return row
+    def create_new_record(self, title, description):
+         self.click_add_new_record()
+         self.click_new_record_title_field()
+         self.enter_new_record_title(title)
+         self.click_new_record_description_field()
+         self.enter_new_record_description(description)
+         self.click_save_record()
 
     def check_new_title_in_table(self, title):
         row = self._row_by_exact_text(title)
-        expect(row).to_be_visible(timeout=10000)
-        return True
+        expect(row).to_be_visible(timeout=Timeout.Long)
+        return row
 
     def check_new_desc_in_table(self, description):
         row = self._row_by_exact_text(description)
-        expect(row).to_be_visible(timeout=10000)
-        return True
-
+        expect(row).to_be_visible(timeout=Timeout.Long)
+        return row
 
     def click_delete_record(self, title):
         row = self._row_by_exact_text(title)
-        row.get_by_role(self.DELETE_BUTTON, name=self.DELETE_TEXT).click()
+        row.get_by_role(r_const.DELETE_BUTTON, name=r_const.DELETE_TEXT).click()
+
+    def check_record_is_deleted(self, title):
+        row = self._row_by_exact_text(title)
+        expect(row).not_to_be_visible(timeout=Timeout.Long)
+
+    # Do not forget that private methods are at the end or the beginning of the class
+    def _row_by_exact_text(self, text):
+        table = self.page.get_by_role(r_const.TABLE_ROLE)
+        cell = table.get_by_role(r_const.CELL_ROLE, name=text, exact=True).first
+        row = cell.locator(r_const.ROW_XPATH)
+        return row
 

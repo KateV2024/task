@@ -1,6 +1,7 @@
 import pytest
 import os
 from pymongo import MongoClient
+from db_helper import DatabaseHelper
 from playwright.sync_api import sync_playwright
 
 
@@ -12,23 +13,19 @@ DATABASE_NAME = "myapp"
 COLLECTION_NAME = "My_records"
 
 
-@pytest.fixture(params=["en", "ru"], scope="function")
-def locale(request):
-    return request.param
-
 @pytest.fixture(scope="function")
 def browser_context():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
-        page.evaluate("""
-                const overlay = document.getElementById('webpack-dev-server-client-overlay');
-                if (overlay) overlay.remove();
-            """)
         yield page
         context.close()
         browser.close()
+
+@pytest.fixture(params=["en", "ru"], scope="function")
+def locale(request):
+    return request.param
 
 
 @pytest.fixture(scope="session")
@@ -55,3 +52,7 @@ def db_connection():
 @pytest.fixture(scope='function')
 def db_collection(db_connection):
     return db_connection[COLLECTION_NAME]
+
+@pytest.fixture(scope='function')
+def db_helper(db_connection, backend_url):
+     return DatabaseHelper(db_connection, COLLECTION_NAME, backend_url)
