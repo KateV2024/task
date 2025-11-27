@@ -1,0 +1,2 @@
+class ButtonLocators():
+    BUTTON = "button"

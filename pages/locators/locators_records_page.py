@@ -1,13 +1,10 @@
 class RecordsPageConstants:
-    NEW_RECORD_BUTTON = "button"
     NEW_RECORD_TEXT = "Add Record"
     NEW_TITLE_FIELD = "textbox"
     NEW_TITLE_INPUT = "Title"
     NEW_DESC_FIELD = "textbox"
     NEW_DESC_INPUT = "Description"
-    SAVE_BUTTON = "button"
     SAVE_TEXT = "Save"
-    DELETE_BUTTON = "button"
     DELETE_TEXT = "Delete"
     TABLE_ROLE = "table"
     CELL_ROLE = "cell"

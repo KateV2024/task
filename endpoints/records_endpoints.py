@@ -29,11 +29,10 @@ class Record():
         return record_id
 
     def delete_record(self, record_id, session, backend_url):
-        url = f'{backend_url}/{record_id}'
-        self.response = session.delete(url)
+        self.response = session.delete(f'{backend_url}/{record_id}')
         self.response_json = self.response.json()
 
-    def check_status_code(self, expected_status_code):
-        assert self.response.status_code == expected_status_code, \
-        f'Expected {expected_status_code}, got {self.response.status_code}'
+    def verify_status_code(self, expected_status_code):
+        assert self.response.status_code == expected_status_code
+        f'Expected {expected_status_code}, got Actual {self.response.status_code}'
 

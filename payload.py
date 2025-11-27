@@ -21,4 +21,3 @@ class Payload:
 
 
 valid_payload = Payload.generate_payload("Event")
-print(valid_payload)

@@ -1,19 +1,20 @@
 import allure
 from pages.home_page import HomePage
+from helpers.consts import Const, Feature, Tags, Epic
 
 
-@allure.epic("Records")
-@allure.feature("Records Management via UI")
-@allure.tag("ui", "records", "positive")
-@allure.link("Jira-111")
-@allure.feature("Navigation")
-@allure.story("User navigates to Records page from Home page")
+@allure.epic(Epic.RECORDS)
+@allure.feature(Feature.RECORD_MANAGEMENT_UI)
+@allure.tag(Tags.UI,
+            Tags.POSITIVE,
+            Tags.HOME_PAGE
+            )
+
 class TestNavigationToRecordsPage:
 
     @allure.story("Navigation to Record Page")
     @allure.description("This test covers the scenario when user navigates to Records page from Home page")
-    @allure.tag("home page")
-    @allure.severity(allure.severity_level.CRITICAL)
+    @allure.severity(Const.BLOCKER)
     def test_user_moves_to_records_page(self, browser_context, base_url, locale):
         page = browser_context
         home = HomePage(page, base_url)

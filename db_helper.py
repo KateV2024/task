@@ -28,6 +28,10 @@ class DatabaseHelper:
         result = self.collection.delete_one({"_id": record_id})
         return result.deleted_count > 0
 
-    def check_record_is_deleted(self, record_id):
+    def is_record_present_in_database(self, record_id):
         db_record = self.find_record_by_id(record_id)
-        return db_record is None
+        return db_record is not None
+
+    def verify_record_is_deleted(self, record_id):
+        return not self.is_record_present_in_database(record_id)
+
