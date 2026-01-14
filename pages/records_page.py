@@ -2,6 +2,8 @@ from pages.base_page import BasePage
 from playwright.sync_api import expect
 from pages.locators.locators_records_page import RecordsPageConstants as r_const
 from pages.locators.base_locators import ButtonLocators as btn
+from pages.locators.base_locators import TextLocators as tb
+from pages.locators.locators_records_page import TableLocators as tbl
 from settings import Timeout
 
 
@@ -16,16 +18,16 @@ class RecordsPage(BasePage):
         self.get_new_record_btn().click()
 
     def click_new_record_title_field(self):
-        self.get_by_role(r_const.NEW_TITLE_FIELD, name = r_const.NEW_TITLE_INPUT).click()
+        self.get_by_role(tb.TEXTBOX, name = r_const.NEW_TITLE_INPUT).click()
 
     def enter_new_record_title(self, title):
-        return self.get_by_role(r_const.NEW_TITLE_FIELD, name = r_const.NEW_TITLE_INPUT).fill(title)
+        return self.get_by_role(tb.TEXTBOX, name = r_const.NEW_TITLE_INPUT).fill(title)
 
     def click_new_record_description_field(self):
-        self.get_by_role(r_const.NEW_DESC_FIELD, name=r_const.NEW_DESC_INPUT).click()
+        self.get_by_role(tb.TEXTBOX, name=r_const.NEW_DESC_INPUT).click()
 
     def enter_new_record_description(self, description):
-        return self.get_by_role(r_const.NEW_DESC_FIELD, name=r_const.NEW_DESC_INPUT).fill(description)
+        return self.get_by_role(tb.TEXTBOX, name=r_const.NEW_DESC_INPUT).fill(description)
 
     def click_save_record(self):
         self.get_by_role(btn.BUTTON, name=r_const.SAVE_TEXT).click()
@@ -56,13 +58,13 @@ class RecordsPage(BasePage):
 
     def _row_by_exact_text(self, text):
         try:
-            table = self.page.get_by_role(r_const.TABLE_ROLE)
-            cell = table.get_by_role(r_const.CELL_ROLE, name=text, exact=True).first
+            table = self.page.get_by_role(tbl.TABLE)
+            cell = table.get_by_role(tbl.CELL, name=text, exact=True).first
             if not cell:
                 cell = cell.first
             if cell.count() > 1:
                 raise AssertionError(f"Multiple rows found with text '{text}' (found {cell.count()})")
-            row = cell.locator(r_const.ROW_XPATH)
+            row = cell.locator(tbl.ROW)
         finally:
             return row
 
