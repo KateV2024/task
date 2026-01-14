@@ -10,7 +10,7 @@ from settings import Timeout
 class RecordsPage(BasePage):
 
     def get_new_record_btn(self):
-        new_record_btn = self.get_by_role(btn.BUTTON, name = r_const.NEW_RECORD_TEXT)
+        new_record_btn = self.get_by_role(btn.BUTTON, name=r_const.NEW_RECORD_TEXT)
         new_record_btn.wait_for(state="visible")
         return new_record_btn
 
@@ -40,33 +40,25 @@ class RecordsPage(BasePage):
         self.enter_new_record_description(description)
         self.click_save_record()
 
-    def get_new_title_in_table(self, title):
+    def get_row_by_text(self, text, field_type="title"):
         try:
-            row = self._row_by_exact_text(title)
+            row = self._row_by_exact_text(text)
             expect(row).to_be_visible(timeout=Timeout.Long)
             return row
         except Exception as e:
-            raise AssertionError(f"Row with title '{title}' not found: {str(e)}")
+            raise AssertionError(f"Row with {field_type} '{text}' not found: {str(e)}")
+
+    def get_new_title_in_table(self, title):
+         return self.get_row_by_text(title, field_type="title")
 
     def get_new_desc_in_table(self, description):
-        try:
-            row = self._row_by_exact_text(description)
-            expect(row).to_be_visible(timeout=Timeout.Long)
-            return row
-        except Exception as e:
-            raise AssertionError(f"Row with description '{description}' not found: {str(e)}")
+        return self.get_row_by_text(description, field_type="description")
 
     def _row_by_exact_text(self, text):
-        try:
-            table = self.page.get_by_role(tbl.TABLE)
-            cell = table.get_by_role(tbl.CELL, name=text, exact=True).first
-            if not cell:
-                cell = cell.first
-            if cell.count() > 1:
-                raise AssertionError(f"Multiple rows found with text '{text}' (found {cell.count()})")
-            row = cell.locator(tbl.ROW)
-        finally:
-            return row
+        table = self.page.get_by_role(tbl.TABLE)
+        cell = table.get_by_role(tbl.CELL, name=text, exact=True).first
+        row = cell.locator(tbl.ROW)
+        return row
 
     def delete_record_by_title(self, text):
         row = self._row_by_exact_text(text)
@@ -78,7 +70,7 @@ class RecordsPage(BasePage):
             row = self._row_by_exact_text(title)
             expect(row).not_to_be_visible(timeout=Timeout.Long)
         except AssertionError:
-              pass
+            pass
         except Exception as e:
-            raise Exception(f"Failed to delete record '{title}': {str(e)}")
+            raise Exception(f"Failed to verify deletion of record '{title}': {str(e)}")
 
