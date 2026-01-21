@@ -2,20 +2,25 @@ import allure
 from pages.home_page import HomePage
 from pages.records_page import RecordsPage
 from payload import valid_payload
+from helpers.consts import Const, Feature, Tags, Epic
 
 
-@allure.epic("Records")
-@allure.feature("Records Management via UI")
-@allure.tag("ui", "records", "positive", "new record")
-@allure.link("Jira-112")
-@allure.feature("Records")
-@allure.story("User creates a new record, verifies it and deletes it")
+@allure.epic(Epic.RECORDS)
+@allure.feature(Feature.RECORD_MANAGEMENT_UI)
+@allure.tag(Tags.UI,
+            Tags.POSITIVE,
+            Tags.HOME_PAGE,
+            Tags.RECORDS_PAGE,
+            Tags.CREATE_RECORD,
+            Tags.GET_RECORD_DETAILS,
+            Tags.DELETE_RECORD
+            )
+
 class TestFullRecordLifecycle:
 
-    @allure.story("User creates, verifies and deletes a newly added record")
+    @allure.story("User creates a new record, verifies it and deletes it")
     @allure.description("This test covers the scenario when user creates, verifies and deletes a newly added record")
-    @allure.tag("create record", "verify record", "delete record", "verify deletion")
-    @allure.severity(allure.severity_level.CRITICAL)
+    @allure.severity(Const.CRITICAL)
     def test_record_full_lifecycle(self, browser_context, base_url, locale):
         # Do not use class and methods from tests
         page = browser_context
@@ -27,17 +32,17 @@ class TestFullRecordLifecycle:
             home.click_go_to_records()
 
         with allure.step("Verify user is on Records list page and sees a 'Add new record' button"):
-            record.check_new_record_btn()
+            record.get_new_record_btn()
 
         with allure.step("User creates a new record"):
             record.create_new_record(valid_payload["title"], valid_payload["description"])
 
         with allure.step("Verify new record is added"):
-            record.check_new_title_in_table(valid_payload["title"])
-            record.check_new_desc_in_table(valid_payload["description"])
+            record.get_new_title_in_table(valid_payload["title"])
+            record.get_new_desc_in_table(valid_payload["description"])
 
         with allure.step("User deletes the newly added record"):
-            record.click_delete_record(valid_payload["title"])
+            record.delete_record_by_title(valid_payload["title"])
 
         with allure.step("User verifies the record is deleted"):
-            record.check_record_is_deleted(valid_payload["title"])
+            record.verify_record_is_deleted(valid_payload["title"])

@@ -1,6 +1,6 @@
 from pages.base_page import BasePage
 from pages.locators.locators_home_page import HomePageConstants as home_const
-from settings import Timeout
+from pages.locators.base_locators import ButtonLocators as btn
 
 
 class HomePage(BasePage):
@@ -14,8 +14,7 @@ class HomePage(BasePage):
         self.open_url(self.base_url)
 
     def click_go_to_records(self):
-        go_to_records = self.get_by_role(home_const.GO_TO_RECORDS_BUTTON, name=home_const.GO_TO_RECORDS_TEXT)
-        go_to_records.wait_for(state="visible", timeout=Timeout.Medium)
+        go_to_records = self.get_by_role(btn.BUTTON, name=home_const.GO_TO_RECORDS_TEXT)
         go_to_records.click()
 
 

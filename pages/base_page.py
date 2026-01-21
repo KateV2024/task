@@ -1,5 +1,4 @@
 from playwright.sync_api import Page
-from settings import Timeout
 
 
 class BasePage:
@@ -17,8 +16,8 @@ class BasePage:
     def get_by_role(self, role, **kwargs):
         return self.page.get_by_role(role, **kwargs)
 
-    def click_element(self, locator, timeout=Timeout.Medium):
+    def click_element(self, locator):
         element = self.get_locator(locator)
-        element.wait_for(state="visible", timeout=timeout)
+        element.wait_for(state="visible")
         element.click()
 
